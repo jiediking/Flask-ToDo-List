@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todo.db'
@@ -17,13 +17,14 @@ class Task(db.Model):
     completed = db.Column(db.Boolean, default=False)
 
 with app.app_context():
-    inspector = db.inspect(db.engine)
-    cols = [c['name'] for c in inspector.get_columns('task')]
-    if 'due_time' not in cols:
-        default_dt = datetime.now() + timedelta(days=1)
-        db.session.execute(text('ALTER TABLE task ADD COLUMN due_time DATETIME'))
-        db.session.execute(text('UPDATE task SET due_time = :dt'), {'dt': default_dt})
-        db.session.commit()
+    inspector = inspect(db.engine)
+    if inspector.has_table('task'):
+        cols = [c['name'] for c in inspector.get_columns('task')]
+        if 'due_time' not in cols:
+            default_dt = datetime.now() + timedelta(days=1)
+            db.session.execute(text('ALTER TABLE task ADD COLUMN due_time DATETIME'))
+            db.session.execute(text('UPDATE task SET due_time = :dt'), {'dt': default_dt})
+            db.session.commit()
     db.create_all()
 
 @app.route('/')
