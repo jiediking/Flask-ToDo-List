@@ -32,7 +32,7 @@ def index():
     tasks = Task.query.order_by(Task.due_time).all()
     now = datetime.now()
     for task in tasks:
-        diff = task.due_time - now
+        diff = now - task.due_time
         task.allow_toggle = 0 <= diff.total_seconds() <= 3600
     return render_template('index.html', tasks=tasks)
 
@@ -60,7 +60,7 @@ def update(task_id):
 def toggle(task_id):
     task = Task.query.get_or_404(task_id)
     now = datetime.now()
-    diff = task.due_time - now
+    diff = now - task.due_time
     if 0 <= diff.total_seconds() <= 3600:
         task.completed = not task.completed
         db.session.commit()
