@@ -18,5 +18,8 @@ the interface allows toggling completion shortly before it is due.
    ```
 3. Open your browser at <http://localhost:5000>.
 
+If you run this version against an existing database created before the due-time
+feature, the application will automatically add the missing column at startup.
+
 When adding a task you must also provide a due date and time. Tasks can be
 toggled complete only within the hour before they are due.

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todo.db'
@@ -16,6 +17,13 @@ class Task(db.Model):
     completed = db.Column(db.Boolean, default=False)
 
 with app.app_context():
+    inspector = db.inspect(db.engine)
+    cols = [c['name'] for c in inspector.get_columns('task')]
+    if 'due_time' not in cols:
+        default_dt = datetime.now() + timedelta(days=1)
+        db.session.execute(text('ALTER TABLE task ADD COLUMN due_time DATETIME'))
+        db.session.execute(text('UPDATE task SET due_time = :dt'), {'dt': default_dt})
+        db.session.commit()
     db.create_all()
 
 @app.route('/')
@@ -41,6 +49,8 @@ def add():
 def update(task_id):
     task = Task.query.get_or_404(task_id)
     task.title = request.form.get('title', task.title)
+    if 'due_time' in request.form and request.form['due_time']:
+        task.due_time = datetime.strptime(request.form['due_time'], '%Y-%m-%dT%H:%M')
     task.completed = 'completed' in request.form
     db.session.commit()
     return redirect(url_for('index'))
